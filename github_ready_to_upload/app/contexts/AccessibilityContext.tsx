@@ -11,9 +11,6 @@ interface AccessibilitySettings {
   speechRate: number;
   captionsEnabled: boolean;
   language: string;
-  // New features for Demo/Narrative
-  demoMode: boolean;
-  activePersona: string | null;
 }
 
 interface AccessibilityContextType {
@@ -29,8 +26,6 @@ const defaultSettings: AccessibilitySettings = {
   speechRate: 1,
   captionsEnabled: true,
   language: 'en-US',
-  demoMode: false,
-  activePersona: null,
 };
 
 const AccessibilityContext = createContext<AccessibilityContextType | undefined>(undefined);

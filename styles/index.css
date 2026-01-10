@@ -1,3 +1,28 @@
 @import './fonts.css';
 @import './tailwind.css';
 @import './theme.css';
+
+@layer utilities {
+  .focus-visible-ring {
+    @apply focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-background transition-all duration-200;
+  }
+}
+
+/* Global Focus Styles for Accessibility */
+:focus-visible {
+  outline: 4px solid hsl(var(--primary));
+  outline-offset: 2px;
+  box-shadow: 0 0 0 6px hsl(var(--background));
+}
+
+/* Dyslexia Font Support */
+body.dyslexia-font {
+  font-family: 'OpenDyslexic', 'Comic Sans MS', 'Chalkboard SE', sans-serif !important;
+  line-height: 1.6 !important;
+  letter-spacing: 0.05em !important;
+}
+
+/* Glassmorphism Utilities */
+.glass {
+  @apply bg-background/80 backdrop-blur-md border border-border/50;
+}

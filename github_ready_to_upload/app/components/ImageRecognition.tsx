@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
-import { Camera, Upload, Volume2, ArrowLeft, Image as ImageIcon, Loader2, Sparkles } from "lucide-react";
+import { Camera, Upload, Volume2, ArrowLeft, Image as ImageIcon, Loader2 } from "lucide-react";
 import { useAccessibility } from "../contexts/AccessibilityContext";
 
 interface ImageRecognitionProps {
@@ -46,16 +46,6 @@ export function ImageRecognition({ onNavigate }: ImageRecognitionProps) {
     setIsAnalyzing(true);
     setDescription("");
 
-    // Demo Mode Interception
-    if (settings.demoMode) {
-      setTimeout(() => {
-        const randomDesc = mockDescriptions[Math.floor(Math.random() * mockDescriptions.length)];
-        setDescription(`[DEMO ANALYSIS]: ${randomDesc} (Perfect confidence score: 99.9%)`);
-        setIsAnalyzing(false);
-      }, 1500);
-      return;
-    }
-
     try {
       // Convert base64/blob URL to Blob/File object
       const response = await fetch(selectedImage);
@@ -80,7 +70,7 @@ export function ImageRecognition({ onNavigate }: ImageRecognitionProps) {
       console.error('Error analyzing image:', error);
       setDescription("Sorry, I couldn't analyze this image. Please try again.");
     } finally {
-      if (!settings.demoMode) setIsAnalyzing(false);
+      setIsAnalyzing(false);
     }
   };
 
@@ -182,21 +172,6 @@ export function ImageRecognition({ onNavigate }: ImageRecognitionProps) {
               <Upload className="h-8 w-8" aria-hidden="true" />
               Upload Image
             </Button>
-
-            {settings.demoMode && (
-              <Button
-                size="lg"
-                className="min-h-[80px] flex-col gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0"
-                onClick={() => {
-                  setSelectedImage("https://picsum.photos/800/600");
-                  // Auto-analyze after a short delay to simulate "Magic"
-                  setTimeout(() => analyzeImage(), 500);
-                }}
-              >
-                <Sparkles className="h-8 w-8 animate-pulse" />
-                Magic Demo Image
-              </Button>
-            )}
 
             <Button
               size="lg"

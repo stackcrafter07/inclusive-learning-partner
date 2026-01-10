@@ -3,13 +3,13 @@ import { Card } from "./ui/card";
 import { Slider } from "./ui/slider";
 import { Switch } from "./ui/switch";
 import { Label } from "./ui/label";
-import {
-  ArrowLeft,
-  Type,
-  Palette,
-  Mic,
-  Volume2,
-  Languages,
+import { 
+  ArrowLeft, 
+  Type, 
+  Palette, 
+  Mic, 
+  Volume2, 
+  Languages, 
   Captions,
   Eye,
   Keyboard,
@@ -60,7 +60,7 @@ export function SettingsPanel({ onNavigate }: SettingsPanelProps) {
 
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="space-y-6">
-
+          
           {/* Visual Settings */}
           <Card className="p-6">
             <div className="flex items-center gap-3 mb-6">
@@ -115,10 +115,11 @@ export function SettingsPanel({ onNavigate }: SettingsPanelProps) {
                     <button
                       key={mode}
                       onClick={() => updateSettings({ contrastMode: mode })}
-                      className={`p-4 rounded-lg border-2 text-left transition-all min-h-[100px] ${settings.contrastMode === mode
+                      className={`p-4 rounded-lg border-2 text-left transition-all min-h-[100px] ${
+                        settings.contrastMode === mode
                           ? 'border-primary bg-primary/10'
                           : 'border-border hover:border-primary/50'
-                        }`}
+                      }`}
                       aria-label={`Select ${label} contrast mode`}
                       aria-pressed={settings.contrastMode === mode}
                     >
@@ -180,10 +181,11 @@ export function SettingsPanel({ onNavigate }: SettingsPanelProps) {
                   <button
                     key={mode}
                     onClick={() => updateSettings({ inputMode: mode })}
-                    className={`p-4 rounded-lg border-2 text-left transition-all min-h-[120px] ${settings.inputMode === mode
+                    className={`p-4 rounded-lg border-2 text-left transition-all min-h-[120px] ${
+                      settings.inputMode === mode
                         ? 'border-primary bg-primary/10'
                         : 'border-border hover:border-primary/50'
-                      }`}
+                    }`}
                     aria-label={`Select ${label} input mode`}
                     aria-pressed={settings.inputMode === mode}
                   >
@@ -278,10 +280,11 @@ export function SettingsPanel({ onNavigate }: SettingsPanelProps) {
                 <button
                   key={code}
                   onClick={() => updateSettings({ language: code })}
-                  className={`p-4 rounded-lg border-2 text-left transition-all ${settings.language === code
+                  className={`p-4 rounded-lg border-2 text-left transition-all ${
+                    settings.language === code
                       ? 'border-primary bg-primary/10'
                       : 'border-border hover:border-primary/50'
-                    }`}
+                  }`}
                   aria-label={`Select ${name} language`}
                   aria-pressed={settings.language === code}
                 >
@@ -296,33 +299,22 @@ export function SettingsPanel({ onNavigate }: SettingsPanelProps) {
             </div>
           </Card>
 
-          {/* System & Demo Settings (Hackathon Special) */}
-          <Card className="p-6 border-yellow-200 dark:border-yellow-800 bg-yellow-50/50 dark:bg-yellow-900/20">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-yellow-100 dark:bg-yellow-900 rounded-lg flex items-center justify-center">
-                <Check className="h-5 w-5 text-yellow-600 dark:text-yellow-300" aria-hidden="true" />
-              </div>
-              <div>
-                <h2>System & Demo</h2>
-                <p className="text-sm text-muted-foreground">Configuration for presentations</p>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between p-4 rounded-lg bg-background border">
-              <div className="flex-1">
-                <Label htmlFor="demo-mode-toggle" className="cursor-pointer font-semibold">
-                  Demo Mode
-                </Label>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Use mock data and bypass backend (Safest for presentations)
-                </p>
-              </div>
-              <Switch
-                id="demo-mode-toggle"
-                checked={settings.demoMode}
-                onCheckedChange={(checked) => updateSettings({ demoMode: checked })}
-                aria-label="Toggle demo mode"
-              />
+          {/* Info Card */}
+          <Card className="p-6 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+            <h3 className="mb-3">Accessibility Information</h3>
+            <div className="space-y-2 text-sm text-muted-foreground">
+              <p>
+                • All settings are automatically saved and will persist across sessions
+              </p>
+              <p>
+                • Keyboard navigation: Use Tab to navigate, Enter/Space to select
+              </p>
+              <p>
+                • Screen reader support: All controls include proper ARIA labels
+              </p>
+              <p>
+                • Voice commands are available when Voice or Mixed input mode is enabled
+              </p>
             </div>
           </Card>
         </div>
