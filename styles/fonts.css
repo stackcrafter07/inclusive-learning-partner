@@ -1,0 +1,10 @@
+/* OpenDyslexic Font for dyslexia-friendly reading */
+@import url('https://fonts.cdnfonts.com/css/opendyslexic');
+
+.dyslexia-font {
+  font-family: 'OpenDyslexic', sans-serif !important;
+}
+
+.dyslexia-font * {
+  font-family: 'OpenDyslexic', sans-serif !important;
+}
