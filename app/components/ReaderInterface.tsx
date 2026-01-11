@@ -2,8 +2,9 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Slider } from "./ui/slider";
-import { Play, Pause, SkipBack, SkipForward, Mic, Volume2, ArrowLeft, Settings, Sparkles, Loader2 } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Mic, Volume2, ArrowLeft, Settings, Sparkles, Loader2, Hand } from "lucide-react";
 import { useAccessibility } from "../contexts/AccessibilityContext";
+import { GestureController } from "./GestureController";
 
 interface ReaderInterfaceProps {
   onNavigate: (page: string) => void;
@@ -25,6 +26,7 @@ export function ReaderInterface({ onNavigate }: ReaderInterfaceProps) {
   const [speechRate, setSpeechRate] = useState(1);
   const [isListening, setIsListening] = useState(false);
   const [isSimplifying, setIsSimplifying] = useState(false);
+  const [showGestures, setShowGestures] = useState(false);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   const words = text.split(/(\s+)/);
@@ -65,6 +67,14 @@ export function ReaderInterface({ onNavigate }: ReaderInterfaceProps) {
       alert("Could not simplify text. Please try again.");
     } finally {
       setIsSimplifying(false);
+    }
+  };
+
+  const handleGesture = (gesture: string) => {
+    if (gesture === 'play' && !isPlaying) {
+      startSpeech();
+    } else if (gesture === 'pause' && isPlaying) {
+      pauseSpeech();
     }
   };
 
@@ -294,14 +304,33 @@ export function ReaderInterface({ onNavigate }: ReaderInterfaceProps) {
                     variant={isListening ? "default" : "outline"}
                     className="min-h-[56px] ml-4"
                     onClick={startVoiceInput}
-                    aria-label="Voice control - say play, pause, faster, or slower"
+                    aria-label="Voice control"
                   >
                     <Mic className={`h-5 w-5 mr-2 ${isListening ? 'animate-pulse' : ''}`} aria-hidden="true" />
                     {isListening ? 'Listening...' : 'Voice Control'}
                   </Button>
                 )}
+
+                <Button
+                  size="lg"
+                  variant={showGestures ? "default" : "outline"}
+                  className="min-h-[56px] ml-2"
+                  onClick={() => setShowGestures(!showGestures)}
+                  aria-label="Toggle camera for gesture control"
+                >
+                  <Hand className="h-5 w-5 mr-2" />
+                  {showGestures ? "Gestures On" : "Gestures"}
+                </Button>
               </div>
             </div>
+
+            {/* Gesture Controller Overlay */}
+            {showGestures && (
+              <GestureController
+                onGesture={handleGesture}
+                onClose={() => setShowGestures(false)}
+              />
+            )}
 
             {/* Speed Control */}
             <div>
