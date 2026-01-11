@@ -2,14 +2,14 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Slider } from "./ui/slider";
-import { Play, Pause, SkipBack, SkipForward, Mic, Volume2, ArrowLeft, Settings } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Mic, Volume2, ArrowLeft, Settings, Sparkles, Loader2 } from "lucide-react";
 import { useAccessibility } from "../contexts/AccessibilityContext";
 
 interface ReaderInterfaceProps {
   onNavigate: (page: string) => void;
 }
 
-const sampleText = `Welcome to the Inclusive Learning Companion. This is a demonstration of our text-to-speech reader with synchronized highlighting. 
+const initialText = `Welcome to the Inclusive Learning Companion. This is a demonstration of our text-to-speech reader with synchronized highlighting. 
 
 Accessibility is not just about compliance; it's about creating an inclusive environment where everyone can learn effectively. When we design with accessibility in mind, we make education better for everyone.
 
@@ -19,12 +19,15 @@ You can adjust the reading speed, choose different voices, and customize the app
 
 export function ReaderInterface({ onNavigate }: ReaderInterfaceProps) {
   const { settings } = useAccessibility();
+  const [text, setText] = useState(initialText);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentWordIndex, setCurrentWordIndex] = useState(-1);
   const [speechRate, setSpeechRate] = useState(1);
   const [isListening, setIsListening] = useState(false);
+  const [isSimplifying, setIsSimplifying] = useState(false);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
-  const words = sampleText.split(/(\s+)/);
+
+  const words = text.split(/(\s+)/);
 
   useEffect(() => {
     return () => {
@@ -34,6 +37,37 @@ export function ReaderInterface({ onNavigate }: ReaderInterfaceProps) {
     };
   }, []);
 
+  const simplifyText = async () => {
+    setIsSimplifying(true);
+
+    // Demo Mode Interception
+    if (settings.demoMode) {
+      setTimeout(() => {
+        setText("Welcome! This app reads text to you. It highlights words so you can follow along. Making learning easy for everyone is important. Using sound and sight together helps you learn better. You can change how fast it reads and how it looks. Try the buttons below!");
+        setIsSimplifying(false);
+      }, 1500);
+      return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:3000/api/simplify-text', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+
+      if (!response.ok) throw new Error("Failed to simplify");
+
+      const data = await response.json();
+      setText(data.simplified);
+    } catch (error) {
+      console.error("Simplification error:", error);
+      alert("Could not simplify text. Please try again.");
+    } finally {
+      setIsSimplifying(false);
+    }
+  };
+
   const startSpeech = () => {
     if (!window.speechSynthesis) {
       alert("Text-to-speech is not supported in your browser");
@@ -41,11 +75,11 @@ export function ReaderInterface({ onNavigate }: ReaderInterfaceProps) {
     }
 
     window.speechSynthesis.cancel();
-    
-    const utterance = new SpeechSynthesisUtterance(sampleText);
+
+    const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = speechRate;
     utterance.lang = settings.language;
-    
+
     let wordCount = 0;
     utterance.onboundary = (event) => {
       if (event.name === 'word') {
@@ -99,7 +133,7 @@ export function ReaderInterface({ onNavigate }: ReaderInterfaceProps) {
 
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
-    
+
     recognition.continuous = false;
     recognition.interimResults = false;
     recognition.lang = settings.language;
@@ -110,7 +144,7 @@ export function ReaderInterface({ onNavigate }: ReaderInterfaceProps) {
 
     recognition.onresult = (event: any) => {
       const transcript = event.results[0][0].transcript.toLowerCase();
-      
+
       // Voice commands
       if (transcript.includes('play') || transcript.includes('start')) {
         startSpeech();
@@ -156,15 +190,32 @@ export function ReaderInterface({ onNavigate }: ReaderInterfaceProps) {
                 <p className="text-sm text-muted-foreground">Text-to-speech with highlighting</p>
               </div>
             </div>
-            <Button
-              variant="outline"
-              size="lg"
-              className="min-h-[48px]"
-              onClick={() => onNavigate('settings')}
-              aria-label="Open settings"
-            >
-              <Settings className="h-5 w-5" aria-hidden="true" />
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="lg"
+                className="min-h-[48px] bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950 dark:to-purple-950 border-purple-200 dark:border-purple-800"
+                onClick={simplifyText}
+                disabled={isSimplifying}
+                aria-label="Simplify text with AI"
+              >
+                {isSimplifying ? (
+                  <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                ) : (
+                  <Sparkles className="h-5 w-5 mr-2 text-purple-600 dark:text-purple-400" />
+                )}
+                {isSimplifying ? "Simplifying..." : "Simplify Text"}
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                className="min-h-[48px]"
+                onClick={() => onNavigate('settings')}
+                aria-label="Open settings"
+              >
+                <Settings className="h-5 w-5" aria-hidden="true" />
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -172,7 +223,7 @@ export function ReaderInterface({ onNavigate }: ReaderInterfaceProps) {
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         {/* Reader Card */}
         <Card className="p-8 mb-6">
-          <div 
+          <div
             className="prose prose-lg max-w-none leading-relaxed"
             role="article"
             aria-label="Reading content"
@@ -180,15 +231,14 @@ export function ReaderInterface({ onNavigate }: ReaderInterfaceProps) {
             {words.map((word, index) => {
               const isCurrentWord = index === currentWordIndex;
               const isWhitespace = word.trim() === '';
-              
+
               return (
                 <span
                   key={index}
-                  className={`transition-all duration-200 ${
-                    isCurrentWord && !isWhitespace
-                      ? 'bg-yellow-300 dark:bg-yellow-600 font-semibold px-1 rounded'
-                      : ''
-                  }`}
+                  className={`transition-all duration-200 ${isCurrentWord && !isWhitespace
+                    ? 'bg-yellow-300 dark:bg-yellow-600 font-semibold px-1 rounded'
+                    : ''
+                    }`}
                 >
                   {word}
                 </span>
@@ -214,7 +264,7 @@ export function ReaderInterface({ onNavigate }: ReaderInterfaceProps) {
                 >
                   <SkipBack className="h-6 w-6" aria-hidden="true" />
                 </Button>
-                
+
                 <Button
                   size="lg"
                   className="min-h-[64px] min-w-[64px]"
@@ -227,7 +277,7 @@ export function ReaderInterface({ onNavigate }: ReaderInterfaceProps) {
                     <Play className="h-7 w-7 ml-1" aria-hidden="true" />
                   )}
                 </Button>
-                
+
                 <Button
                   size="lg"
                   variant="outline"

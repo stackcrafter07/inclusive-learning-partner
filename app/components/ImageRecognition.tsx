@@ -18,6 +18,8 @@ export function ImageRecognition({ onNavigate }: ImageRecognitionProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isUsingCamera, setIsUsingCamera] = useState(false);
 
+  const [useGemini, setUseGemini] = useState(true);
+
   // Mock image descriptions for demo purposes
   const mockDescriptions = [
     "A detailed diagram showing the water cycle, including evaporation from oceans, condensation forming clouds, precipitation as rain, and water flowing back to the ocean through rivers. The diagram uses blue arrows to show the direction of water movement.",
@@ -63,6 +65,7 @@ export function ImageRecognition({ onNavigate }: ImageRecognitionProps) {
 
       const formData = new FormData();
       formData.append('image', blob, 'image.jpg');
+      formData.append('useGemini', useGemini.toString());
 
       const apiResponse = await fetch('http://localhost:3000/api/analyze-image', {
         method: 'POST',
@@ -74,7 +77,8 @@ export function ImageRecognition({ onNavigate }: ImageRecognitionProps) {
       }
 
       const data = await apiResponse.json();
-      setDescription(data.description);
+      const source = data.source === 'gemini' ? "✨ Analysis by Google Gemini" : "🤖 Analysis by TensorFlow.js (Local)";
+      setDescription(`${source}\n\n${data.description}`);
 
     } catch (error) {
       console.error('Error analyzing image:', error);
@@ -149,20 +153,36 @@ export function ImageRecognition({ onNavigate }: ImageRecognitionProps) {
       {/* Header */}
       <header className="border-b bg-card sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4 max-w-5xl">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="lg"
-              className="min-h-[48px]"
-              onClick={() => onNavigate('dashboard')}
-              aria-label="Go back to dashboard"
-            >
-              <ArrowLeft className="mr-2 h-5 w-5" aria-hidden="true" />
-              Back
-            </Button>
-            <div>
-              <h1 className="text-xl">Image Recognition</h1>
-              <p className="text-sm text-muted-foreground">Describe visual content with AI</p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="lg"
+                className="min-h-[48px]"
+                onClick={() => onNavigate('dashboard')}
+                aria-label="Go back to dashboard"
+              >
+                <ArrowLeft className="mr-2 h-5 w-5" aria-hidden="true" />
+                Back
+              </Button>
+              <div>
+                <h1 className="text-xl">Image Recognition</h1>
+                <p className="text-sm text-muted-foreground">Describe visual content with AI</p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Sparkles className={`h-4 w-4 ${useGemini ? 'text-purple-500' : 'text-muted-foreground'}`} />
+              <label htmlFor="gemini-toggle" className="text-sm font-medium cursor-pointer">
+                Pro Analysis (Gemini)
+              </label>
+              <input
+                id="gemini-toggle"
+                type="checkbox"
+                className="toggle"
+                checked={useGemini}
+                onChange={(e) => setUseGemini(e.target.checked)}
+              />
             </div>
           </div>
         </div>

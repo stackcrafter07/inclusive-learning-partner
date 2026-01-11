@@ -11,11 +11,28 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import jpeg from 'jpeg-js';
 import { PNG } from 'pngjs';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 const port = 3000;
+
+// Gemini Setup
+const geminiApiKey = process.env.GEMINI_API_KEY;
+let genAI;
+let model;
+
+if (geminiApiKey) {
+    genAI = new GoogleGenerativeAI(geminiApiKey);
+    model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    console.log("Gemini AI initialized.");
+} else {
+    console.warn("WARNING: GEMINI_API_KEY not found in .env. Gemini features will be disabled.");
+}
 
 // Middleware
 app.use(cors());
@@ -66,8 +83,7 @@ let objectDetectionModel;
 
 // --- Endpoints ---
 
-// 1. Image Analysis
-
+// 1. Image Analysis (Standard + Gemini)
 // Helper to decode image
 const decodeImage = (imagePath) => {
     const buffer = fs.readFileSync(imagePath);
@@ -117,12 +133,48 @@ app.post('/api/analyze-image', upload.single('image'), async (req, res) => {
     }
 
     const imagePath = req.file.path;
-    console.log(`Processing image: ${imagePath}`);
+    const useGemini = req.body.useGemini === 'true'; // Check if client requests Gemini
+
+    console.log(`Processing image: ${imagePath}, useGemini: ${useGemini}`);
 
     try {
+        // Option A: Use Gemini if available and requested
+        if (useGemini && model) {
+            try {
+                const imageData = fs.readFileSync(imagePath);
+                const imageBase64 = imageData.toString('base64');
+
+                const prompt = "Describe this image in detail for a visually impaired user. Focus on the main subjects, layout, colors, and any text present. Keep it concise but descriptive.";
+
+                const result = await model.generateContent([
+                    prompt,
+                    {
+                        inlineData: {
+                            data: imageBase64,
+                            mimeType: req.file.mimetype
+                        }
+                    }
+                ]);
+                const response = await result.response;
+                const text = response.text();
+
+                res.json({ description: text, source: 'gemini' });
+
+                // Cleanup
+                fs.unlinkSync(imagePath);
+                return;
+
+            } catch (geminiError) {
+                console.error("Gemini Error:", geminiError);
+                // Fallback to local analysis if Gemini fails
+                console.log("Falling back to local TensorFlow/OCR analysis...");
+            }
+        }
+
+        // Option B: Local Analysis (TensorFlow + Tesseract)
         let descriptionParts = [];
 
-        // A. Object Detection
+        // B1. Object Detection
         if (objectDetectionModel) {
             try {
                 const tfImage = decodeImage(imagePath);
@@ -147,7 +199,7 @@ app.post('/api/analyze-image', upload.single('image'), async (req, res) => {
             descriptionParts.push("Object detection model not ready.");
         }
 
-        // B. OCR (Text Recognition)
+        // B2. OCR (Text Recognition)
         const worker = await createWorker('eng');
         const { data: { text } } = await worker.recognize(imagePath);
         await worker.terminate();
@@ -159,7 +211,7 @@ app.post('/api/analyze-image', upload.single('image'), async (req, res) => {
         }
 
         const fullDescription = descriptionParts.join(' ');
-        res.json({ description: fullDescription });
+        res.json({ description: fullDescription, source: 'local' });
 
         // Cleanup uploaded file
         fs.unlinkSync(imagePath);
@@ -167,6 +219,37 @@ app.post('/api/analyze-image', upload.single('image'), async (req, res) => {
     } catch (error) {
         console.error('Analysis error:', error);
         res.status(500).json({ error: 'Failed to analyze image' });
+    }
+});
+
+// 1.5 Text Simplification (Gemini)
+app.post('/api/simplify-text', async (req, res) => {
+    const { text } = req.body;
+
+    if (!text) {
+        return res.status(400).json({ error: 'Text is required' });
+    }
+
+    if (!model) {
+        return res.status(503).json({ error: 'Gemini service not available (API Key missing)' });
+    }
+
+    try {
+        const prompt = `Simplify the following text for someone with cognitive learning difficulties (like Dyslexia or ADHD). 
+        Make it easier to read, use simpler vocabulary, and break long sentences. 
+        Keep the core meaning intact.
+        
+        Text to simplify:
+        "${text}"`;
+
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const simplifiedText = response.text();
+
+        res.json({ simplified: simplifiedText });
+    } catch (error) {
+        console.error("Simplification error:", error);
+        res.status(500).json({ error: 'Failed to simplify text' });
     }
 });
 
@@ -221,4 +304,5 @@ app.post('/api/settings', async (req, res) => {
 
 app.listen(port, () => {
     console.log(`Inclusive Backend running on http://localhost:${port}`);
+    console.log(`Gemini integration: ${geminiApiKey ? 'ACTIVE' : 'INACTIVE (No API Key)'}`);
 });
